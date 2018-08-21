@@ -34,7 +34,7 @@ def join(room_id, name):
         sid_map[request.sid] = (room.id, player.id)
 
         print('DBG game-joined', room.id, player.id, player.name)
-        emit('game-joined', player.id)
+        emit('game-joined', (player.id, json.dumps(room.players, default=lambda o: o.__dict__)))
         emit('room-update', json.dumps(room.players, default=lambda o: o.__dict__), room=room.id)
 
 @socketio.on('start-game')

@@ -10,43 +10,34 @@ socket.on('game-created', function(room_id, player_id) {
 	window.player_id = player_id;
 	console.log(room_id);
 	console.log(player_id);
-	fetchlobby(true);
-	setTimeout(function(){
+	fetchlobby(true)
+	.then(function(){
 		document.getElementById("room-id-display").innerHTML = room_id;
 		let node = document.createElement("LI");                 
 		let textnode = document.createTextNode(player_id+" "+username);       
 		node.appendChild(textnode);                              
 		document.getElementById("player-list").appendChild(node);
-	}, 100);
+	})
+	.then(function(){
+		socket.on('room-update', updatePlayerLobby);
+	});
 });
 
-socket.on('game-joined', function(player_id){
+socket.on('game-joined', function(player_id, players){
 	window.player_id = player_id;
-	fetchlobby(false);
-	setTimeout(function(){
+	fetchlobby(false)
+	.then(function(){
 		document.getElementById("room-id-display").innerHTML = window.room_id;
-	}, 100);
+		updatePlayerLobby(players)
+	})
+	.then(function(){
+		socket.on('room-update', updatePlayerLobby);		
+	});
 });
 
 socket.on('invalid-game-room', function(){
 	alert('invalid game room');
 })
-
-socket.on('room-update', function(players) {
-	console.log(players);
-	var players = JSON.parse(players);
-	setTimeout(function(){
-		document.getElementById("player-list").innerHTML = "";                
-		for(let i = 0; i<players.length; i++){
-			let node = document.createElement("LI");
-			if(players[i] == null || players[i] == undefined)
-				continue;                 
-			let textnode = document.createTextNode(players[i]['id']+" "+players[i]['name']);       
-			node.appendChild(textnode);                              
-			document.getElementById("player-list").appendChild(node);	
-		}
-	},100);
-});
 
 socket.on('position-update', function(players){
 	console.log(players);
@@ -63,7 +54,7 @@ function createGame(){
 }
 
 function fetchlobby(owner){
-	fetch('/lobby')
+	return fetch('/lobby')
 		.then(function(response){
 			return response.text();
 		})
@@ -74,6 +65,20 @@ function fetchlobby(owner){
 			}
 		});
 }
+
+function updatePlayerLobby(players){
+	var players = JSON.parse(players);
+	document.getElementById("player-list").innerHTML = "";                
+	for(let i = 0; i<players.length; i++){
+		let node = document.createElement("LI");
+		if(players[i] == null || players[i] == undefined)
+			continue;                 
+		let textnode = document.createTextNode(players[i]['id']+" "+players[i]['name']);       
+		node.appendChild(textnode);                              
+		document.getElementById("player-list").appendChild(node);	
+	}
+	console.log(players);
+}	
 
 function startGame(){
 	socket.emit('start-game');
