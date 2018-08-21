@@ -6,6 +6,8 @@ socket.on('connect', function() {
 
 var username = prompt("Username");
 socket.on('game-created', function(room_id, player_id) {
+	window.room_id = room_id;
+	window.player_id = player_id;
 	console.log(room_id);
 	console.log(player_id);
 	fetchlobby(true);
@@ -26,6 +28,10 @@ socket.on('game-joined', function(player_id){
 	}, 100);
 });
 
+socket.on('invalid-game-room', function(){
+	alert('invalid game room');
+})
+
 socket.on('room-update', function(players) {
 	console.log(players);
 	var players = JSON.parse(players);
@@ -41,6 +47,10 @@ socket.on('room-update', function(players) {
 		}
 	},100);
 });
+
+socket.on('position-update', function(players){
+	console.log(players);
+})
 
 function joinGame(){
 	var room = document.getElementById('room_id').value;
@@ -68,3 +78,16 @@ function fetchlobby(owner){
 function startGame(){
 	socket.emit('start-game');
 }
+
+socket.on('game-started', function(playerpos){
+	document.getElementById("app").innerHTML = "<h1>"+window.room_id+"</h1>"+"<canvas id='game-canvas' width='500' height='500' style='border:5px solid black;'>";
+	console.log(playerpos);
+	var canvas = document.getElementById('game-canvas');
+	if(canvas.getContext){
+		var ctx = canvas.getContext('2d');
+		/*
+		for(let i = 0; i < playerpos.length; i++){
+			ctx.fillRect(playerpos[i][25, 50, 50);
+		}*/
+	}
+});

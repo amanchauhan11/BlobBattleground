@@ -9,6 +9,8 @@ class GameRoom:
         self.id = self.generate_room_id()
         self.players = []
         self.owner = None
+        self.playerpos = {}
+        self.dimension = (500, 500)
 
     def new_player(self, *args):
         p = None
@@ -32,3 +34,11 @@ class GameRoom:
             self.generate_room_id()
         else:
             return room_id
+
+    def spawn_players(self):
+        for player in self.players:
+            if player is not None:
+                self.playerpos[player.id] = (random.randrange(1, self.dimension[0]), random.randrange(1, self.dimension[1]));
+            else:
+                self.playerpos[player.id] = None
+        return self.playerpos
