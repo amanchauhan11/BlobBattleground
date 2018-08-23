@@ -130,8 +130,7 @@ function main() {
         console.log('Initial Player positions:');
         console.log(players);
         document.getElementById('app').classList.add('hidden');
-        loadScript(libsrc)
-            .then(() => loadScript(gamesrc))
+        loadScript(gamesrc)
             .then(() => gameSetup(players));
     });
 

@@ -5,33 +5,44 @@ class Player {
     }
 }
 
+class PlayerView {
+    constructor(x, y){
+        this.x = x;
+        this.y = y;
+    }
+}
+
+
 class KeyboardController {
-    constructor(player, cursors) {
+    constructor(player){
         this.player = player;
-        this.cursors = cursors;
     }
 
-    update() {
-        const dir_map = { left: { x: -1, y: 0 }, right: { x: 1, y: 0 }, up: { x: 0, y: -1 }, down: { x: 0, y: 1 }};
-        const delta = { x: 0, y: 0 };
-
-        for (let dir in this.cursors) {
-            if (this.cursors[dir].isDown) {
-                delta.x += dir_map[dir].x;
-                delta.y += dir_map[dir].y;
-            }
-        }
-
+    setListener() {
         let view = this.player.view;
-        view.body.velocity.x += delta.x * 100;
-        view.body.velocity.y += delta.y * 100;
+        window.addEventListener("keydown", (key)=>{
+            switch(key.key){
+                case "ArrowDown":
+                    view.y+=4;
+                    break;
+                case "ArrowUp":
+                    view.y-=4;
+                    break;
+                case "ArrowLeft":
+                    view.x-=4;
+                    break;
+                case "ArrowRight":
+                    view.x+=4;
+                    break;
+            }
+        });
     }
 
     stateSnapshot() {
         let state = {
             id: this.player.id,
-            posx: this.player.view.body.x,
-            posy: this.player.view.body.y
+            posx: this.player.view.x,
+            posy: this.player.view.y
         };
         return state;
     }
@@ -52,9 +63,9 @@ class NetworkController {
         for(let i = 0; i<players.length; i++){
             if(players[i].id == lobby.self_id)
                 continue;
-            let view = this.players[players[i].id];
-            view.body.x = players[i].posx;
-            view.body.y = players[i].posy;
+            let view = this.players[players[i].id].view;
+            view.x = players[i].posx;
+            view.y = players[i].posy;
         }
     }
 }
@@ -62,73 +73,73 @@ class NetworkController {
 let keyboardController = null;
 let networkController = null;
 
-class PlayState {
-    constructor(initialPStates){
-        this.initialPStates = initialPStates;
-    }
-    preload() {
-        // load images and stuff here
-    }
+class Game {
 
-    createPlayerView(physics, initial_pos={x:0,y:0}) {
-        let playerView = this.game.add.graphics(this.game.world.centerX, this.game.world.centerY);
-        playerView.beginFill(0xFF4370, 1);
-        playerView.drawCircle(initial_pos.x, initial_pos.y, 60);
+    createPlayerView(initial_pos_x, initial_pos_y) {
 
-        if (physics) {
-            this.game.physics.enable(playerView, Phaser.Physics.ARCADE);
-            playerView.body.drag.set(200);
-            playerView.body.maxVelocity.set(200);
-        }
-
-        return playerView;
+        return new PlayerView(initial_pos_x, initial_pos_y);
     }
 
-    create() {
-        this.game.physics.startSystem(Phaser.Physics.ARCADE);
-        networkController = new NetworkController();
-        for(let i = 0; i<this.initialPStates.length; i++){
-            if(this.initialPStates[i].id == lobby.self_id){
-                let self_pos = {x:this.initialPStates[i].posx, y:this.initialPStates[i].posy};
-                let player = new Player(lobby.self_id, this.createPlayerView(true, self_pos));
-                let cursors = this.game.input.keyboard.createCursorKeys();
-                keyboardController = new KeyboardController(player, cursors);
+    constructor(config, initialPStates){
+
+        this.canvas = config.canvas;
+        this.canvas.width = 500;
+        this.canvas.height = 500;
+        this.context = this.canvas.getContext("2d");
+
+        this.keyboardController = null;
+        this.networkController = new NetworkController();
+
+        for(let i = 0; i<initialPStates.length; i++){
+            let self_posx = initialPStates[i].posx;
+            let self_posy = initialPStates[i].posy;
+            let player = new Player(initialPStates[i].id, this.createPlayerView(self_posx, self_posy));
+            if(initialPStates[i].id == lobby.self_id){    
+                this.keyboardController = new KeyboardController(player);
             }
             else {
-                let pos = {x: this.initialPStates[i].posx, y: this.initialPStates[i].posy};
-                let player = new Player(this.initialPStates[i].id, this.createPlayerView(true, pos));
-                networkController.addPlayer(player);
+                this.networkController.addPlayer(player);
             }
         }
+
+        this.keyboardController.setListener();
+
         lobby.socket.on('game-update', (players) => {
             players = JSON.parse(players);
-            networkController.networkUpdate(players);
-            lobby.socket.emit('client-update', JSON.stringify(keyboardController.stateSnapshot()));
+            this.clear();
+            this.redraw();
+            this.networkController.networkUpdate(players);
+            lobby.socket.emit('client-update', JSON.stringify(this.keyboardController.stateSnapshot()));
         });
     }
 
-    update() {
-        keyboardController.update();
+    clear(){
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    redraw(){
+        let ctx = this.context;
+        ctx.fillStyle = "blue";
+        let self_x = this.keyboardController.player.view.x;
+        let self_y = this.keyboardController.player.view.y;
+        ctx.fillRect(self_x, self_y, 30, 30);
+
+        ctx.fillStyle = "red";
+        for(let id in this.networkController.players){
+            let pos_x = this.networkController.players[id].view.x;
+            let pos_y = this.networkController.players[id].view.y;
+            ctx.fillRect(pos_x, pos_y, 30, 30);
+        }
     }
 }
+
 
 function gameSetup(players) {
     console.log(players);
     players = JSON.parse(players);
-
     const config = {
-        renderer: Phaser.AUTO,
-        width: 1020,
-        height: 728,
-        physics: {
-            default: 'arcade',
-            arcade: {
-                gravity: { y: 200 }
-            }
-        },
-        state: new PlayState(players)
-    };
-
-    let game = new Phaser.Game(config);
-    console.log('Created Phaser game');
+        canvas: document.body.appendChild(document.createElement('canvas'))
+    }
+    let game = new Game(config, players);
+    console.log('Created Canvas game');
 }
