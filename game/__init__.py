@@ -19,7 +19,7 @@ dictConfig({
     }
 })
 
-app = Flask(__name__)
+application = app = Flask(__name__)
 socketio = SocketIO(app)
 
 import game.views
