@@ -18,4 +18,4 @@ ENV PYTHONPATH=/deploy
 
 EXPOSE 8080
 
-CMD ["gunicorn", "--config", "/deploy/gunicorn_config.py", "-k","eventlet" "game:app"]
+CMD ["gunicorn", "--config", "/deploy/gunicorn_config.py", "-k","eventlet", "game:app"]
