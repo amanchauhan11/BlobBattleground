@@ -10,8 +10,8 @@ RUN pip3 install -r /deploy/game/requirements.txt
 
 # Deploy application
 COPY gunicorn_config.py /deploy/gunicorn_config.py
-COPY app /deploy/game
-WORKDIR /deploy/game
+COPY game /deploy/game
+WORKDIR /deploy
 
 # Set Python path
 ENV PYTHONPATH=/deploy
